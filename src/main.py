@@ -2,6 +2,7 @@ import os
 import torch
 import pandas as pd
 from sklearn.model_selection import train_test_split
+from torch.utils.data import DataLoader, TensorDataset
 from data_loader import load_ecg_data
 from model import ECGCNN
 from train import train_model, evaluate_model, plot_loss
