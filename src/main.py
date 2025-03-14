@@ -61,18 +61,22 @@ def main():
     model = ECGCNN(num_classes)
     model = model.to(device)
 
+    # Crear directorio de salida para las imágenes
+    output_dir = "img"
+    os.makedirs(output_dir, exist_ok=True)
+
     # Entrenar el modelo
     loss_values = train_model(model, train_loader, num_epochs, learning_rate, device)
 
     # Graficar la función de pérdida
-    plot_loss(loss_values)
+    plot_loss(loss_values, output_dir)
 
     # Evaluar el modelo
     evaluate_model(model, test_loader, device)
 
     # Visualizar el modelo
     input_tensor = torch.randn(1, 12, 1000).to(device)
-    visualize_model(model, input_tensor, device)
+    visualize_model(model, input_tensor, device, output_dir)
 
 if __name__ == "__main__":
     main()
