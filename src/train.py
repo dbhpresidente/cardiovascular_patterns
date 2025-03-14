@@ -3,6 +3,7 @@ import torch.optim as optim
 import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
 import matplotlib.pyplot as plt
+import os
 
 def train_model(model, train_loader, num_epochs, learning_rate, device):
     criterion = nn.CrossEntropyLoss()
@@ -47,7 +48,7 @@ def evaluate_model(model, test_loader, device):
     print(f'Accuracy of the model on the test set: {accuracy:.2f}%')
     return accuracy
 
-def plot_loss(loss_values):
+def plot_loss(loss_values, output_dir):
     plt.figure(figsize=(10, 5))
     plt.plot(loss_values, label='Pérdida', color='blue')
     plt.title('Función de Pérdida Durante el Entrenamiento')
@@ -55,4 +56,5 @@ def plot_loss(loss_values):
     plt.ylabel('Pérdida')
     plt.legend()
     plt.grid()
-    plt.show()
+    plt.savefig(os.path.join(output_dir, "training_loss.png"))
+    plt.close()

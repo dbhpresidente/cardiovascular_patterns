@@ -4,8 +4,9 @@ import itertools
 import torch
 from torchviz import make_dot
 from torchview import draw_graph
+import os
 
-def plot_roc_curve(y_true_np, y_probs_np):
+def plot_roc_curve(y_true_np, y_probs_np, output_dir):
     roc_auc = roc_auc_score(y_true_np, y_probs_np)
     print(f"ROC AUC: {roc_auc:.4f}")
 
@@ -18,9 +19,10 @@ def plot_roc_curve(y_true_np, y_probs_np):
     plt.ylabel("Tasa de Verdaderos Positivos (TPR)")
     plt.title("Curva ROC")
     plt.legend(loc="lower right")
-    plt.show()
+    plt.savefig(os.path.join(output_dir, "roc_curve.png"))
+    plt.close()
 
-def plot_confusion_matrix(y_true_np, y_pred_np):
+def plot_confusion_matrix(y_true_np, y_pred_np, output_dir):
     conf_matrix = confusion_matrix(y_true_np, y_pred_np)
 
     plt.figure(figsize=(6, 6))
@@ -42,11 +44,12 @@ def plot_confusion_matrix(y_true_np, y_pred_np):
     plt.ylabel("Etiqueta Verdadera")
     plt.xlabel("Etiqueta Predicha")
     plt.tight_layout()
-    plt.show()
+    plt.savefig(os.path.join(output_dir, "confusion_matrix.png"))
+    plt.close()
 
-def visualize_model(model, input_tensor, device):
+def visualize_model(model, input_tensor, device, output_dir):
     input_tensor = input_tensor.to(device)
-    make_dot(model(input_tensor), params=dict(model.named_parameters())).render("ecgcnn_architecture", format="png")
+    make_dot(model(input_tensor), params=dict(model.named_parameters())).render(os.path.join(output_dir, "ecgcnn_architecture"), format="png")
 
     graph = draw_graph(model, input_tensor, expand_nested=True)
-    graph.visual_graph.render("ecg_model_architecture", format="png", cleanup=True)
+    graph.visual_graph.render(os.path.join(output_dir, "ecg_model_architecture"), format="png", cleanup=True)
