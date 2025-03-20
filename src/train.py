@@ -7,7 +7,7 @@ import os
 
 def train_model(model, train_loader, num_epochs, learning_rate, device):
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+    optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-5)  # L2 regularization
 
     loss_values = []
     for epoch in range(num_epochs):

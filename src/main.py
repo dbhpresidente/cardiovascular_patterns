@@ -54,8 +54,8 @@ def main():
 
     # Definir hiperparámetros
     num_classes = len(set(y_train.cpu().numpy()))
-    num_epochs = 50
-    learning_rate = 0.001
+    num_epochs = 100  # Incrementar el número de épocas
+    learning_rate = 0.0001  # Reducir la tasa de aprendizaje
 
     # Inicializar el modelo
     model = ECGCNN(num_classes)
