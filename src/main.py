@@ -71,8 +71,11 @@ def main():
     # Graficar la función de pérdida
     plot_loss(loss_values, output_dir)
 
-    # Evaluar el modelo
-    evaluate_model(model, test_loader, device)
+    # Evaluar el modelo en el conjunto de entrenamiento
+    evaluate_model(model, train_loader, device, output_dir, "train")
+
+    # Evaluar el modelo en el conjunto de prueba
+    evaluate_model(model, test_loader, device, output_dir, "test")
 
     # Visualizar el modelo
     input_tensor = torch.randn(1, 12, 1000).to(device)

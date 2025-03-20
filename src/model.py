@@ -11,7 +11,7 @@ class ECGCNN(nn.Module):
         self.conv3 = nn.Conv1d(in_channels=64, out_channels=128, kernel_size=5)
         self.bn3 = nn.BatchNorm1d(128)
         self.pool = nn.MaxPool1d(kernel_size=2)
-        self.fc1 = nn.Linear(128 * 123, 256)
+        self.fc1 = nn.Linear(128 * 121, 256)  # Ajustar la dimensión aquí
         self.fc2 = nn.Linear(256, 128)
         self.fc3 = nn.Linear(128, num_classes)
         self.relu = nn.ReLU()
