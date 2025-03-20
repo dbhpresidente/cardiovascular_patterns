@@ -10,6 +10,15 @@ import numpy as np  # Importar numpy
 from sklearn.metrics import ConfusionMatrixDisplay  # Import ConfusionMatrixDisplay
 
 def plot_roc_curve(y_true, y_probs, output_dir, phase):
+    """
+    Genera y guarda la gráfica de la curva ROC.
+
+    Args:
+        y_true (array): Etiquetas verdaderas.
+        y_probs (array): Probabilidades predichas.
+        output_dir (str): Directorio de salida para guardar la imagen.
+        phase (str): Fase del modelo (train o test).
+    """
     fpr, tpr, _ = roc_curve(y_true, y_probs)
     roc_auc = roc_auc_score(y_true, y_probs)
     plt.figure(figsize=(10, 5))
@@ -26,6 +35,15 @@ def plot_roc_curve(y_true, y_probs, output_dir, phase):
     plt.close()
 
 def plot_confusion_matrix(y_true, y_pred, output_dir, phase):
+    """
+    Genera y guarda la matriz de confusión.
+
+    Args:
+        y_true (array): Etiquetas verdaderas.
+        y_pred (array): Etiquetas predichas.
+        output_dir (str): Directorio de salida para guardar la imagen.
+        phase (str): Fase del modelo (train o test).
+    """
     cm = confusion_matrix(y_true, y_pred)
     disp = ConfusionMatrixDisplay(confusion_matrix=cm)
     disp.plot(cmap=plt.cm.Blues)
@@ -33,14 +51,34 @@ def plot_confusion_matrix(y_true, y_pred, output_dir, phase):
     plt.savefig(os.path.join(output_dir, f"confusion_matrix_{phase}.png"))
     plt.close()
 
-
 def save_classification_report(y_true, y_pred, output_dir, phase):
+    """
+    Guarda el reporte de clasificación en un archivo CSV.
+
+    Args:
+        y_true (array): Etiquetas verdaderas.
+        y_pred (array): Etiquetas predichas.
+        output_dir (str): Directorio de salida para guardar el archivo.
+        phase (str): Fase del modelo (train o test).
+    """
     report = classification_report(y_true, y_pred, output_dict=True)
     df = pd.DataFrame(report).transpose()
     df.to_csv(os.path.join(output_dir, f"classification_report_{phase}.csv"), index=True)
 
-
 def train_model(model, train_loader, num_epochs, learning_rate, device):
+    """
+    Entrena el modelo.
+
+    Args:
+        model (nn.Module): El modelo a entrenar.
+        train_loader (DataLoader): DataLoader para el conjunto de entrenamiento.
+        num_epochs (int): Número de épocas.
+        learning_rate (float): Tasa de aprendizaje.
+        device (torch.device): Dispositivo (CPU o GPU).
+
+    Returns:
+        list: Lista de valores de pérdida por época.
+    """
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-5)  # L2 regularization
 
@@ -67,6 +105,19 @@ def train_model(model, train_loader, num_epochs, learning_rate, device):
     return loss_values
 
 def evaluate_model(model, data_loader, device, output_dir, phase):
+    """
+    Evalúa el modelo y genera las gráficas y reportes.
+
+    Args:
+        model (nn.Module): El modelo a evaluar.
+        data_loader (DataLoader): DataLoader para el conjunto de datos.
+        device (torch.device): Dispositivo (CPU o GPU).
+        output_dir (str): Directorio de salida para guardar las imágenes y reportes.
+        phase (str): Fase del modelo (train o test).
+
+    Returns:
+        float: Precisión del modelo.
+    """
     model.eval()
     correct = 0
     total = 0
@@ -93,13 +144,20 @@ def evaluate_model(model, data_loader, device, output_dir, phase):
     y_pred_np = np.array(all_preds)
     y_probs_np = np.array(all_probs)
 
-
+    plot_roc_curve(y_true_np, y_probs_np, output_dir, phase)
     plot_confusion_matrix(y_true_np, y_pred_np, output_dir, phase)
     save_classification_report(y_true_np, y_pred_np, output_dir, phase)
-    
+
     return accuracy
 
 def plot_loss(loss_values, output_dir):
+    """
+    Genera y guarda la gráfica de la función de pérdida.
+
+    Args:
+        loss_values (list): Lista de valores de pérdida por época.
+        output_dir (str): Directorio de salida para guardar la imagen.
+    """
     plt.figure(figsize=(10, 5))
     plt.plot(loss_values, label='Pérdida', color='blue')
     plt.title('Función de Pérdida Durante el Entrenamiento')
