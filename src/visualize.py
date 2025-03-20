@@ -8,6 +8,15 @@ import os
 import pandas as pd
 
 def plot_roc_curve(y_true_np, y_probs_np, output_dir, phase):
+    """
+    Genera y guarda la gráfica de la curva ROC.
+
+    Args:
+        y_true_np (array): Etiquetas verdaderas.
+        y_probs_np (array): Probabilidades predichas.
+        output_dir (str): Directorio de salida para guardar la imagen.
+        phase (str): Fase del modelo (train o test).
+    """
     roc_auc = roc_auc_score(y_true_np, y_probs_np)
     print(f"ROC AUC ({phase}): {roc_auc:.4f}")
 
@@ -24,6 +33,15 @@ def plot_roc_curve(y_true_np, y_probs_np, output_dir, phase):
     plt.close()
 
 def plot_confusion_matrix(y_true_np, y_pred_np, output_dir, phase):
+    """
+    Genera y guarda la matriz de confusión.
+
+    Args:
+        y_true_np (array): Etiquetas verdaderas.
+        y_pred_np (array): Etiquetas predichas.
+        output_dir (str): Directorio de salida para guardar la imagen.
+        phase (str): Fase del modelo (train o test).
+    """
     conf_matrix = confusion_matrix(y_true_np, y_pred_np)
 
     plt.figure(figsize=(6, 6))
@@ -49,11 +67,29 @@ def plot_confusion_matrix(y_true_np, y_pred_np, output_dir, phase):
     plt.close()
 
 def save_classification_report(y_true_np, y_pred_np, output_dir, phase):
+    """
+    Guarda el reporte de clasificación en un archivo Excel.
+
+    Args:
+        y_true_np (array): Etiquetas verdaderas.
+        y_pred_np (array): Etiquetas predichas.
+        output_dir (str): Directorio de salida para guardar el archivo.
+        phase (str): Fase del modelo (train o test).
+    """
     report = classification_report(y_true_np, y_pred_np, output_dict=True)
     df = pd.DataFrame(report).transpose()
     df.to_excel(os.path.join(output_dir, f"classification_report_{phase}.xlsx"))
 
 def visualize_model(model, input_tensor, device, output_dir):
+    """
+    Genera y guarda la visualización del modelo.
+
+    Args:
+        model (nn.Module): El modelo a visualizar.
+        input_tensor (torch.Tensor): Tensor de entrada para el modelo.
+        device (torch.device): Dispositivo (CPU o GPU).
+        output_dir (str): Directorio de salida para guardar las imágenes.
+    """
     input_tensor = input_tensor.to(device)
     make_dot(model(input_tensor), params=dict(model.named_parameters())).render(os.path.join(output_dir, "ecgcnn_architecture"), format="png")
 

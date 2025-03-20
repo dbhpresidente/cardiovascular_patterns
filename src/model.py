@@ -2,7 +2,19 @@ import torch
 import torch.nn as nn
 
 class ECGCNN(nn.Module):
+    """
+    Clase que define la arquitectura de la red neuronal convolucional para la clasificación de señales ECG.
+
+    Args:
+        num_classes (int): Número de clases de salida.
+    """
     def __init__(self, num_classes):
+        """
+        Inicializa la arquitectura de la red neuronal.
+
+        Args:
+            num_classes (int): Número de clases de salida.
+        """
         super(ECGCNN, self).__init__()
         self.conv1 = nn.Conv1d(in_channels=12, out_channels=32, kernel_size=5)
         self.bn1 = nn.BatchNorm1d(32)
@@ -18,6 +30,15 @@ class ECGCNN(nn.Module):
         self.dropout = nn.Dropout(0.5)
 
     def forward(self, x):
+        """
+        Define el paso hacia adelante de la red neuronal.
+
+        Args:
+            x (torch.Tensor): Tensor de entrada con forma (batch_size, n_channels, seq_length).
+
+        Returns:
+            torch.Tensor: Tensor de salida con las probabilidades de cada clase.
+        """
         x = self.pool(self.relu(self.bn1(self.conv1(x))))
         x = self.pool(self.relu(self.bn2(self.conv2(x))))
         x = self.pool(self.relu(self.bn3(self.conv3(x))))
