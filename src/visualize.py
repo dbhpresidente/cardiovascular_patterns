@@ -6,11 +6,12 @@ from torchviz import make_dot
 from torchview import draw_graph
 import os
 import pandas as pd
+import numpy as np
 
 def plot_roc_curve(y_true_np, y_probs_np, output_dir, phase):
     """
     Genera y guarda la gráfica de la curva ROC.
-
+ 
     Args:
         y_true_np (array): Etiquetas verdaderas.
         y_probs_np (array): Probabilidades predichas.
@@ -43,6 +44,7 @@ def plot_confusion_matrix(y_true_np, y_pred_np, output_dir, phase):
         phase (str): Fase del modelo (train o test).
     """
     conf_matrix = confusion_matrix(y_true_np, y_pred_np)
+    conf_matrix_percent = conf_matrix.astype('float') / conf_matrix.sum(axis=1)[:, np.newaxis] * 100
 
     plt.figure(figsize=(6, 6))
     plt.imshow(conf_matrix, interpolation='nearest', cmap=plt.cm.Blues)
@@ -56,7 +58,7 @@ def plot_confusion_matrix(y_true_np, y_pred_np, output_dir, phase):
 
     thresh = conf_matrix.max() / 2
     for i, j in itertools.product(range(conf_matrix.shape[0]), range(conf_matrix.shape[1])):
-        plt.text(j, i, f"{conf_matrix[i, j]}", 
+        plt.text(j, i, f"{conf_matrix[i, j]}\n({conf_matrix_percent[i, j]:.2f}%)", 
                  horizontalalignment="center",
                  color="white" if conf_matrix[i, j] > thresh else "black")
 

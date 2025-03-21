@@ -5,7 +5,7 @@ from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader, TensorDataset
 from data_loader import load_ecg_data
 from model import ECGCNN
-from train import train_model, evaluate_model, plot_loss
+from train import train_model, evaluate_model, plot_loss, hyperparameter_tuning
 from visualize import plot_roc_curve, plot_confusion_matrix, visualize_model
 
 def main():
@@ -38,18 +38,18 @@ def main():
     y_train = torch.tensor(y_train, dtype=torch.long).to(device)
     y_test = torch.tensor(y_test, dtype=torch.long).to(device)
 
-    # Confirmar que la forma es correcta
-    print("Shape of X_train after permutation:", X_train.shape)
-    print("Shape of X_test after permutation:", X_test.shape)
-    print("Shape of y_train:", y_train.shape)
+    # Dividir los datos de entrenamiento en entrenamiento y validación
+    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.2, random_state=123)
 
     # Crear TensorDatasets
     train_dataset = TensorDataset(X_train, y_train)
+    val_dataset = TensorDataset(X_val, y_val)
     test_dataset = TensorDataset(X_test, y_test)
 
     # Crear DataLoader
     batch_size = 32
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
     # Definir hiperparámetros
@@ -65,8 +65,14 @@ def main():
     output_dir = "img"
     os.makedirs(output_dir, exist_ok=True)
 
-    # Entrenar el modelo
-    loss_values = train_model(model, train_loader, num_epochs, learning_rate, device)
+    # Ajuste de hiperparámetros
+    best_params = hyperparameter_tuning(X_train, y_train, X_val, y_val, output_dir)
+    print("Mejores hiperparámetros:", best_params)
+
+    # Entrenar el modelo con los mejores hiperparámetros
+    model = ECGCNN(num_classes, dropout_rate=best_params['dropout_rate'])
+    model = model.to(device)
+    loss_values = train_model(model, train_loader, best_params['num_epochs'], best_params['learning_rate'], device)
 
     # Graficar la función de pérdida
     plot_loss(loss_values, output_dir)

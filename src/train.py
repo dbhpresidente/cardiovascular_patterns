@@ -8,6 +8,8 @@ from sklearn.metrics import classification_report, roc_auc_score, roc_curve, con
 import pandas as pd
 import numpy as np  # Importar numpy
 from sklearn.metrics import ConfusionMatrixDisplay  # Import ConfusionMatrixDisplay
+import optuna
+from model import ECGCNN  # Importar ECGCNN
 
 def plot_roc_curve(y_true, y_probs, output_dir, phase):
     """
@@ -167,3 +169,75 @@ def plot_loss(loss_values, output_dir):
     plt.grid()
     plt.savefig(os.path.join(output_dir, "training_loss.png"))
     plt.close()
+
+def objective(trial, X_train, y_train, X_val, y_val, output_dir, results):
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    """
+    Función objetivo para Optuna.
+
+    Args:
+        trial (optuna.trial.Trial): Un objeto Trial de Optuna.
+
+    Returns:
+        float: Precisión del modelo en el conjunto de validación.
+    """
+    # Definir los hiperparámetros a buscar
+    learning_rate = trial.suggest_loguniform('learning_rate', 1e-5, 1e-2)
+    batch_size = trial.suggest_categorical('batch_size', [8, 16, 32, 64, 128])
+    num_epochs = trial.suggest_categorical('num_epochs', [50, 100, 150])
+    dropout_rate = trial.suggest_categorical('dropout_rate', [0.3, 0.5, 0.7])
+
+    # Crear el modelo
+    model = ECGCNN(num_classes=len(set(y_train.cpu().numpy())), dropout_rate=dropout_rate)
+    model = model.to(device)
+
+    # Crear el conjunto de datos de entrenamiento y validación
+    train_dataset = TensorDataset(torch.tensor(X_train, dtype=torch.float32), torch.tensor(y_train, dtype=torch.long))
+    val_dataset = TensorDataset(torch.tensor(X_val, dtype=torch.float32), torch.tensor(y_val, dtype=torch.long))
+
+    # Crear DataLoader
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
+
+    # Entrenar el modelo
+    train_model(model, train_loader, num_epochs, learning_rate, device)
+
+    # Evaluar el modelo en el conjunto de validación
+    accuracy = evaluate_model(model, val_loader, device, output_dir, "val")
+    roc_auc = roc_auc_score(y_val.cpu().numpy(), model(torch.tensor(X_val, dtype=torch.float32).to(device)).cpu().detach().numpy()[:, 1])
+
+    # Guardar los resultados de la iteración
+    results.append({
+        'learning_rate': learning_rate,
+        'batch_size': batch_size,
+        'num_epochs': num_epochs,
+        'dropout_rate': dropout_rate,
+        'accuracy': accuracy,
+        'roc_auc': roc_auc
+    })
+
+    return accuracy
+
+def hyperparameter_tuning(X_train, y_train, X_val, y_val, output_dir):
+    """
+    Realiza el ajuste de hiperparámetros utilizando Optuna.
+
+    Args:
+        X_train (np.array): Datos de entrenamiento.
+        y_train (np.array): Etiquetas de entrenamiento.
+        X_val (np.array): Datos de validación.
+        y_val (np.array): Etiquetas de validación.
+        output_dir (str): Directorio de salida para guardar los resultados.
+
+    Returns:
+        dict: Los mejores hiperparámetros encontrados.
+    """
+    results = []
+    study = optuna.create_study(direction='maximize')
+    study.optimize(lambda trial: objective(trial, X_train, y_train, X_val, y_val, output_dir, results), n_trials=50)
+
+    # Guardar los resultados en un archivo CSV
+    results_df = pd.DataFrame(results)
+    results_df.to_csv(os.path.join(output_dir, "hyperparameter_tuning_results.csv"), index=False)
+
+    return study.best_params
