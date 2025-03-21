@@ -70,7 +70,7 @@ def main():
     os.makedirs(output_doc_dir, exist_ok=True)
 
     # Ajuste de hiperparámetros
-    best_params = hyperparameter_tuning(X_train, y_train, X_val, y_val, X_test, y_test, output_doc_dir)
+    best_params = hyperparameter_tuning(X_train, y_train, X_val, y_val, X_test, y_test, output_doc_dir, output_img_dir)
     print("Mejores hiperparámetros:", best_params)
 
     # Entrenar el modelo con los mejores hiperparámetros
