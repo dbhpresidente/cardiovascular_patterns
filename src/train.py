@@ -171,7 +171,7 @@ def plot_loss(loss_values, output_dir):
     plt.savefig(os.path.join(output_dir, "training_loss.png"))
     plt.close()
 
-def objective(trial, X_train, y_train, X_val, y_val, X_test, y_test, output_doc_dir, results):
+def objective(trial, X_train, y_train, X_val, y_val, X_test, y_test, output_doc_dir, output_img_dir, results):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     """
     Función objetivo para Optuna.
@@ -234,7 +234,7 @@ def objective(trial, X_train, y_train, X_val, y_val, X_test, y_test, output_doc_
 
     return val_accuracy
 
-def hyperparameter_tuning(X_train, y_train, X_val, y_val, X_test, y_test, output_doc_dir):
+def hyperparameter_tuning(X_train, y_train, X_val, y_val, X_test, y_test, output_doc_dir, output_img_dir):
     """
     Realiza el ajuste de hiperparámetros utilizando Optuna.
 
@@ -252,6 +252,6 @@ def hyperparameter_tuning(X_train, y_train, X_val, y_val, X_test, y_test, output
     """
     results = []
     study = optuna.create_study(direction='maximize')
-    study.optimize(lambda trial: objective(trial, X_train, y_train, X_val, y_val, X_test, y_test, output_doc_dir, results), n_trials=50)
+    study.optimize(lambda trial: objective(trial, X_train, y_train, X_val, y_val, X_test, y_test, output_doc_dir, output_img_dir, results), n_trials=50)
 
     return study.best_params
