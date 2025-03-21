@@ -62,11 +62,15 @@ def main():
     model = model.to(device)
 
     # Crear directorio de salida para las imágenes
-    output_dir = "img"
-    os.makedirs(output_dir, exist_ok=True)
+    output_img_dir = "img"
+    os.makedirs(output_img_dir, exist_ok=True)
+
+    # Crear directorio de salida para los archivos CSV
+    output_doc_dir = "doc"
+    os.makedirs(output_doc_dir, exist_ok=True)
 
     # Ajuste de hiperparámetros
-    best_params = hyperparameter_tuning(X_train, y_train, X_val, y_val, output_dir)
+    best_params = hyperparameter_tuning(X_train, y_train, X_val, y_val, X_test, y_test, output_doc_dir)
     print("Mejores hiperparámetros:", best_params)
 
     # Entrenar el modelo con los mejores hiperparámetros
@@ -75,17 +79,17 @@ def main():
     loss_values = train_model(model, train_loader, best_params['num_epochs'], best_params['learning_rate'], device)
 
     # Graficar la función de pérdida
-    plot_loss(loss_values, output_dir)
+    plot_loss(loss_values, output_img_dir)
 
     # Evaluar el modelo en el conjunto de entrenamiento
-    evaluate_model(model, train_loader, device, output_dir, "train")
+    evaluate_model(model, train_loader, device, output_img_dir, "train", output_doc_dir)
 
     # Evaluar el modelo en el conjunto de prueba
-    evaluate_model(model, test_loader, device, output_dir, "test")
+    evaluate_model(model, test_loader, device, output_img_dir, "test", output_doc_dir)
 
     # Visualizar el modelo
     input_tensor = torch.randn(1, 12, 1000).to(device)
-    visualize_model(model, input_tensor, device, output_dir)
+    visualize_model(model, input_tensor, device, output_img_dir)
 
 if __name__ == "__main__":
     main()

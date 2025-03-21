@@ -106,7 +106,7 @@ def train_model(model, train_loader, num_epochs, learning_rate, device):
 
     return loss_values
 
-def evaluate_model(model, data_loader, device, output_dir, phase):
+def evaluate_model(model, data_loader, device, output_img_dir, phase, output_doc_dir):
     """
     Evalúa el modelo y genera las gráficas y reportes.
 
@@ -114,8 +114,9 @@ def evaluate_model(model, data_loader, device, output_dir, phase):
         model (nn.Module): El modelo a evaluar.
         data_loader (DataLoader): DataLoader para el conjunto de datos.
         device (torch.device): Dispositivo (CPU o GPU).
-        output_dir (str): Directorio de salida para guardar las imágenes y reportes.
+        output_img_dir (str): Directorio de salida para guardar las imágenes.
         phase (str): Fase del modelo (train o test).
+        output_doc_dir (str): Directorio de salida para guardar los archivos CSV.
 
     Returns:
         float: Precisión del modelo.
@@ -146,9 +147,9 @@ def evaluate_model(model, data_loader, device, output_dir, phase):
     y_pred_np = np.array(all_preds)
     y_probs_np = np.array(all_probs)
 
-    plot_roc_curve(y_true_np, y_probs_np, output_dir, phase)
-    plot_confusion_matrix(y_true_np, y_pred_np, output_dir, phase)
-    save_classification_report(y_true_np, y_pred_np, output_dir, phase)
+    plot_roc_curve(y_true_np, y_probs_np, output_img_dir, phase)
+    plot_confusion_matrix(y_true_np, y_pred_np, output_img_dir, phase)
+    save_classification_report(y_true_np, y_pred_np, output_doc_dir, phase)
 
     return accuracy
 
@@ -170,7 +171,7 @@ def plot_loss(loss_values, output_dir):
     plt.savefig(os.path.join(output_dir, "training_loss.png"))
     plt.close()
 
-def objective(trial, X_train, y_train, X_val, y_val, output_dir, results):
+def objective(trial, X_train, y_train, X_val, y_val, X_test, y_test, output_doc_dir, results):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     """
     Función objetivo para Optuna.
@@ -191,20 +192,27 @@ def objective(trial, X_train, y_train, X_val, y_val, output_dir, results):
     model = ECGCNN(num_classes=len(set(y_train.cpu().numpy())), dropout_rate=dropout_rate)
     model = model.to(device)
 
-    # Crear el conjunto de datos de entrenamiento y validación
+    # Crear el conjunto de datos de entrenamiento, validación y prueba
     train_dataset = TensorDataset(torch.tensor(X_train, dtype=torch.float32), torch.tensor(y_train, dtype=torch.long))
     val_dataset = TensorDataset(torch.tensor(X_val, dtype=torch.float32), torch.tensor(y_val, dtype=torch.long))
+    test_dataset = TensorDataset(torch.tensor(X_test, dtype=torch.float32), torch.tensor(y_test, dtype=torch.long))
 
     # Crear DataLoader
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
     # Entrenar el modelo
     train_model(model, train_loader, num_epochs, learning_rate, device)
 
-    # Evaluar el modelo en el conjunto de validación
-    accuracy = evaluate_model(model, val_loader, device, output_dir, "val")
-    roc_auc = roc_auc_score(y_val.cpu().numpy(), model(torch.tensor(X_val, dtype=torch.float32).to(device)).cpu().detach().numpy()[:, 1])
+    # Evaluar el modelo en los conjuntos de entrenamiento, validación y prueba
+    train_accuracy = evaluate_model(model, train_loader, device, output_img_dir, "train", output_doc_dir)
+    val_accuracy = evaluate_model(model, val_loader, device, output_img_dir, "val", output_doc_dir)
+    test_accuracy = evaluate_model(model, test_loader, device, output_img_dir, "test", output_doc_dir)
+
+    train_roc_auc = roc_auc_score(y_train.cpu().numpy(), model(torch.tensor(X_train, dtype=torch.float32).to(device)).cpu().detach().numpy()[:, 1])
+    val_roc_auc = roc_auc_score(y_val.cpu().numpy(), model(torch.tensor(X_val, dtype=torch.float32).to(device)).cpu().detach().numpy()[:, 1])
+    test_roc_auc = roc_auc_score(y_test.cpu().numpy(), model(torch.tensor(X_test, dtype=torch.float32).to(device)).cpu().detach().numpy()[:, 1])
 
     # Guardar los resultados de la iteración
     results.append({
@@ -212,13 +220,21 @@ def objective(trial, X_train, y_train, X_val, y_val, output_dir, results):
         'batch_size': batch_size,
         'num_epochs': num_epochs,
         'dropout_rate': dropout_rate,
-        'accuracy': accuracy,
-        'roc_auc': roc_auc
+        'train_accuracy': train_accuracy,
+        'val_accuracy': val_accuracy,
+        'test_accuracy': test_accuracy,
+        'train_roc_auc': train_roc_auc,
+        'val_roc_auc': val_roc_auc,
+        'test_roc_auc': test_roc_auc
     })
 
-    return accuracy
+    # Guardar los resultados en un archivo CSV
+    results_df = pd.DataFrame(results)
+    results_df.to_csv(os.path.join(output_doc_dir, "hyperparameter_tuning_results.csv"), index=False)
 
-def hyperparameter_tuning(X_train, y_train, X_val, y_val, output_dir):
+    return val_accuracy
+
+def hyperparameter_tuning(X_train, y_train, X_val, y_val, X_test, y_test, output_doc_dir):
     """
     Realiza el ajuste de hiperparámetros utilizando Optuna.
 
@@ -227,17 +243,15 @@ def hyperparameter_tuning(X_train, y_train, X_val, y_val, output_dir):
         y_train (np.array): Etiquetas de entrenamiento.
         X_val (np.array): Datos de validación.
         y_val (np.array): Etiquetas de validación.
-        output_dir (str): Directorio de salida para guardar los resultados.
+        X_test (np.array): Datos de prueba.
+        y_test (np.array): Etiquetas de prueba.
+        output_doc_dir (str): Directorio de salida para guardar los resultados.
 
     Returns:
         dict: Los mejores hiperparámetros encontrados.
     """
     results = []
     study = optuna.create_study(direction='maximize')
-    study.optimize(lambda trial: objective(trial, X_train, y_train, X_val, y_val, output_dir, results), n_trials=50)
-
-    # Guardar los resultados en un archivo CSV
-    results_df = pd.DataFrame(results)
-    results_df.to_csv(os.path.join(output_dir, "hyperparameter_tuning_results.csv"), index=False)
+    study.optimize(lambda trial: objective(trial, X_train, y_train, X_val, y_val, X_test, y_test, output_doc_dir, results), n_trials=50)
 
     return study.best_params
