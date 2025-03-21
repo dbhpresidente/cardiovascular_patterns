@@ -1,0 +1,2 @@
+learning_rate,batch_size,num_epochs,dropout_rate,train_accuracy,val_accuracy,test_accuracy,train_roc_auc,val_roc_auc,test_roc_auc
+0.00011389359362121462,32,150,0.5,98.38076545632974,81.648675171737,82.02075702075702,0.9840823747230234,0.8743767531903125,0.8790047704646017
